@@ -121,10 +121,6 @@ Item {
     /* ########################################################################## */
     /* Fonts */
     /* ########################################################################## */
-    FontLoader {
-        id: helvetica_black_oblique
-        source: "./HelveticaBlackOB.ttf"
-    }
     FontLoader{
         id: greddy_segment
         source: "./fonts/GreddySegment.ttf"
