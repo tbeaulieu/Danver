@@ -5,4 +5,4 @@
 
  Contains a custom made font.
 
-Change line 171/172 conmenting for chunky vs smooth RPM behavior
+Change line 171/172 conmenting in Danver.qml for chunky vs smooth RPM behavior
