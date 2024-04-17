@@ -225,7 +225,7 @@ Item {
             color: root.displayPlaceholder
         }
         Text{
-            text: if(!root.waterunits)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
+            text: if(root.waterunits !== 0)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
             x: -33; y: 306
             z:3
             width: 209.6
@@ -400,7 +400,7 @@ Item {
                 }
             }
             Text{
-            text: if(!root.oiltempunits)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
+            text: if(root.oiltempunits !== 0)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
                 x: 139; y: 384
                 z: 1
                 width: 69.4
