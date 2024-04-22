@@ -511,7 +511,12 @@ Item {
                 color: if(!root.sidelight) "#5AB6B5"; else root.night_light_color
             }
             Text{
-                text: if (root.speedunits === 0){root.odometer.toFixed(0)} else{root.odometer0data.toFixed(0)}
+                text: if (root.speedunits === 0)
+                        (root.odometer/.62).toFixed(0)
+                    else if(root.speedunits === 1)
+                        root.odometer
+                    else
+                        root.odometer
                 x: 405; y: 439
                 width: 87; height: 13.5
                 font.family: greddy_segment.name
