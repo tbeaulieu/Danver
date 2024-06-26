@@ -168,8 +168,8 @@ Item {
         x: 16; y: 33
         z:2
         height: 200
-        width: Math.floor(root.rpm * .004) * 19.2 //Chunk-style
-        // width: 768 * (root.rpm/10000) //Percentage
+        width: Math.floor(root.rpm * .004) * 19.2   //Chunk-style
+        // width: 768 * (root.rpm/10000)            //Percentage-style
         clip: true
         color: "black"
         Image{
@@ -225,7 +225,7 @@ Item {
             color: root.displayPlaceholder
         }
         Text{
-            text: if(root.waterunits !== 0)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
+            text: if(root.waterunits !== 1)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
             x: -33; y: 306
             z:3
             width: 209.6
@@ -400,7 +400,7 @@ Item {
                 }
             }
             Text{
-            text: if(root.oiltempunits !== 0)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
+            text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
                 x: 139; y: 384
                 z: 1
                 width: 69.4
