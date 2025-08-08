@@ -385,6 +385,7 @@ Item {
         id: other_gauges
         Item{
             id: oil_temp_module
+            visible: if(root.oiltemphigh !== 0 ) true; else false
             Text{
                 text: "Oil Temp"
                 x: 47.2; y: 388.4
@@ -400,7 +401,7 @@ Item {
                 }
             }
             Text{
-            text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
+                text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
                 x: 139; y: 384
                 z: 1
                 width: 69.4
@@ -418,6 +419,7 @@ Item {
         }
         Item{
             id: oil_pressure_module
+            visible: if(root.oilpressurehigh !== 0 ) true; else false
             Text{
                 text: "Oil Pressure"
                 x: 24.2; y: 436.4
@@ -428,7 +430,7 @@ Item {
                 color: if(!root.sidelight) root.primary_color; else root.night_light_color
             }
             Text{
-                text: root.oilpressure.toFixed(0)
+                text: if(root.oilpressureunits === 1) root.oilpressure.toFixed(1); else (root.oilpressure.toFixed(1) * 14.504).toFixed(0)
                 x: 139; y: 431
                 z: 1
                 width: 69.4
