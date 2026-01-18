@@ -129,7 +129,16 @@ Item {
         id: geist
         source: "./fonts/GeistVariableVF.ttf"
     }
-
+    /* ########################################################################## */
+    /* Functions */
+    /* ########################################################################## */
+    function getDisplayColor(value, threshold) {
+        if (value < threshold) {
+            return !root.sidelight ? root.displayDigits : root.night_light_color
+        } else {
+            return !root.sidelight ? root.warning_red : root.night_salmon_red
+        }
+    }
     /* ########################################################################## */
     /* Main Layout items */
     /* ########################################################################## */
@@ -139,9 +148,6 @@ Item {
         height: 480
         width: 800
         source: "./danver/background.png"
-    }
-    Image{
-
     }
     Text{
         text: "rpm x1000"
@@ -232,12 +238,7 @@ Item {
             height: 40.3
             font.pixelSize: 64
             font.family: greddy_segment.name
-            color: if(!root.sidelight){
-                    if(root.watertemp < root.waterhigh) root.displayDigits; else root.warning_red
-                    }
-                else{ 
-                    if(root.watertemp < root.waterhigh) root.night_light_color; else root.night_salmon_red
-                }
+            color: color: root.getDisplayColor(root.watertemp, root.waterhigh)
             horizontalAlignment: Text.AlignRight
         }
         Text{
@@ -408,12 +409,7 @@ Item {
                 height: 19.4
                 font.family: greddy_segment.name
                 font.pixelSize: 40
-                color: if(!root.sidelight){
-                    if(root.oiltemp < root.oiltemphigh) root.primary_color; else root.warning_red
-                    }
-                else{ 
-                    if(root.oiltemp < root.oiltemphigh) root.night_light_color; else root.night_salmon_red
-                }
+                color:color: root.getDisplayColor(root.oiltemp, root.oilhigh)
                 horizontalAlignment: Text.AlignRight
             }
         }
