@@ -1,6 +1,6 @@
 import QtQuick 2.3
 import QtGraphicalEffects 1.0
-import "danver"
+import "img"
 
 Item {
     id: root
@@ -55,7 +55,7 @@ Item {
     property bool left_joystick: inputs & 0x20000000 || root.udp_left
     property bool right_joystick: inputs & 0x40000000 || root.udp_right
 
-    property int odometer: rpmtest.odometer0data/10*0.62 //Need to div by 10 to get 6 digits with leading 0
+    property int odometer: rpmtest.odometer0data/10 //Overridden by Danver.qml: km or miles to match speedunits, div by 10 to get 6 digits
     property int tripmeter: rpmtest.tripmileage0data*0.62
     property real value: 0
     property real shiftvalue: 0
@@ -104,7 +104,17 @@ Item {
     property real rpm_needle_damping: 0.2 //if(rpm<1000).15; else 0.2
 
     property bool changing_page: rpmtest.changing_pagedata
-    property string settingsFocus: ""
+    property int oiltempshow: 0           // 1 = show the oil temp readout
+    property int oilpressureshow: 0       // 1 = show the oil pressure readout
+    // High limits are Celsius; 0 = no warning
+    readonly property bool waterOk: waterhigh === 0 || watertemp < waterhigh
+    readonly property bool oiltempOk: oiltemphigh === 0 || oiltemp < oiltemphigh
+    // Oil pressure Low is bar (the sender value is bar); 0 = no warning
+    readonly property bool oilpressureOk: oilpressurelow === 0 || oilpressure >= oilpressurelow
+    readonly property string oilpressure_color: oilpressureOk ? (!sidelight ? primary_color : night_light_color)
+                                                              : (!sidelight ? warning_red : night_salmon_red)
+
+    property string settingsFocus: ""   // key of the setting being edited, "" when the menu is closed
 
     property string userColor: ""
   
@@ -150,7 +160,7 @@ Item {
         z: 0
         height: 480
         width: 800
-        source: "./danver/background.png"
+        source: "./img/background.png"
     }
     Text{
         text: "rpm x1000"
@@ -170,7 +180,7 @@ Item {
         z:3
         height: 217
         width: 774
-        source: "./danver/rpm_mask.png"
+        source: "./img/rpm_mask.png"
     }
     Rectangle{
         id: rpm_action
@@ -185,7 +195,7 @@ Item {
             z: 2
             height: 200
             width: 768
-            source: if(!root.sidelight) "./danver/cyanRPM.png"; else "./danver/cyanBrightRPM.png"
+            source: if(!root.sidelight) "./img/cyanRPM.png"; else "./img/cyanBrightRPM.png"
         }
     }
     Image{
@@ -193,14 +203,14 @@ Item {
         z:1
         height: 200
         width: 768
-        source: "./danver/rpm_background.png"
+        source: "./img/rpm_background.png"
     }
     Image{
         x: 15; y: 237
         z: 2
         height: 53
         width: 770
-        source: if(!root.sidelight) "./danver/daylight_rpm_marks.png"; else "./danver/dark_rpm_marks.png"
+        source: if(!root.sidelight) "./img/daylight_rpm_marks.png"; else "./img/dark_rpm_marks.png"
     }
     Item{
         id: water_display
@@ -242,10 +252,10 @@ Item {
             font.pixelSize: 64
             font.family: greddy_segment.name
             color:  if(!root.sidelight){
-                    if(root.watertemp < root.waterhigh) root.displayDigits; else root.warning_red
+                    if(root.waterOk) root.displayDigits; else root.warning_red
                     }
                 else{ 
-                    if(root.watertemp < root.waterhigh) root.night_light_color; else root.night_salmon_red
+                    if(root.waterOk) root.night_light_color; else root.night_salmon_red
                 }
             horizontalAlignment: Text.AlignRight
         }
@@ -257,10 +267,10 @@ Item {
             font.family: geist.name
             font.bold: true
             color: if(!root.sidelight){
-                    if(root.watertemp < root.waterhigh) root.displayDigits; else root.warning_red
+                    if(root.waterOk) root.displayDigits; else root.warning_red
                     }
                 else{ 
-                    if(root.watertemp < root.waterhigh) root.night_light_color; else root.night_salmon_red
+                    if(root.waterOk) root.night_light_color; else root.night_salmon_red
                 }
             transform:
                 Rotation{
@@ -413,7 +423,7 @@ Item {
         id: other_gauges
         Item{
             id: oil_temp_module
-            visible: if(root.oiltemphigh !== 0 ) true; else false
+            visible: root.oiltempshow === 1
             Text{
                 text: "Oil Temp"
                 x: 47.2; y: 388.4
@@ -422,27 +432,28 @@ Item {
                 font.bold: true
                 font.pixelSize: 16
                 color: if(!root.sidelight){
-                    if(root.oiltemp < root.oiltemphigh) root.primary_color; else root.warning_red
+                    if(root.oiltempOk) root.primary_color; else root.warning_red
                     }
                 else{ 
-                    if(root.oiltemp < root.oiltemphigh) root.night_light_color; else root.night_salmon_red
+                    if(root.oiltempOk) root.night_light_color; else root.night_salmon_red
                 }
             }
             Text{
                 text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
-                x: 139; y: 384
+                x: 126; y: 384
                 z: 1
-                width: 69.4
+                width: 104
                 height: 19.4
                 font.family: greddy_segment.name
                 font.pixelSize: 40
-                color: root.getDisplayColor(root.oiltemp, root.oiltemphigh)
+                color: root.oiltempOk ? (!root.sidelight ? root.primary_color : root.night_light_color)
+                                      : (!root.sidelight ? root.warning_red : root.night_salmon_red)
                 horizontalAlignment: Text.AlignRight
             }
         }
         Item{
             id: oil_pressure_module
-            visible: if(root.oilpressurehigh !== 0 ) true; else false
+            visible: root.oilpressureshow === 1
             Text{
                 text: "Oil Pressure"
                 x: 24.2; y: 436.4
@@ -450,17 +461,17 @@ Item {
                 font.family: geist.name
                 font.bold: true
                 font.pixelSize: 16
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
+                color: root.oilpressure_color
             }
             Text{
                 text: if(root.oilpressureunits === 1) root.oilpressure.toFixed(1); else (root.oilpressure.toFixed(1) * 14.504).toFixed(0)
-                x: 139; y: 431
+                x: 126; y: 431
                 z: 1
-                width: 69.4
+                width: 104
                 height: 19.4
                 font.family: greddy_segment.name
                 font.pixelSize: 40
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
+                color: root.oilpressure_color
                 horizontalAlignment: Text.AlignRight
             }
         }
@@ -536,12 +547,8 @@ Item {
                 color: if(!root.sidelight) "#5AB6B5"; else root.night_light_color
             }
             Text{
-                text: if (root.speedunits === 0)
-                        (root.odometer/.62).toFixed(0)
-                    else if(root.speedunits === 1)
-                        root.odometer
-                    else
-                        root.odometer
+                // Danver.qml already hands this over in km (KMH) or miles (MPH / BOTH)
+                text: root.odometer
                 x: 405; y: 439
                 width: 87; height: 13.5
                 font.family: greddy_segment.name
@@ -557,72 +564,134 @@ Item {
             x: 717.1; y: 380.9
             width: 33; height: 34 
             z: 1
-            source: "./danver/gas-light.png"
+            source: "./img/gas-light.png"
             visible: root.fuel < root.fuellow
         }
         Image{
             x: 679.3; y: 380.9
             width: 33; height: 34 
             z: 1
-            source: "./danver/oil-light.png"
+            source: "./img/oil-light.png"
             visible: root.oil
         }
         Image{
             x: 641.3; y: 380.9
             width: 33; height: 34 
             z: 1
-            source: "./danver/brake-light.png"
+            source: "./img/brake-light.png"
             visible: root.brake
         }
         Image{
             x: 603.7; y: 380.9
             width: 33; height: 34 
             z: 1
-            source: "./danver/seatbelt-light.png"
+            source: "./img/seatbelt-light.png"
             visible: root.seatbelt
         }
         Image{
             x: 565.8; y: 380.9
             width: 33; height: 34 
             z: 1
-            source: "./danver/blinker-light.png"
+            source: "./img/blinker-light.png"
             visible: root.leftindicator || root.rightindicator
         }
         Image{
             x:735.9; y: 418
              width: 33; height: 34 
             z: 1
-            source: "./danver/checkengine-light.png"
+            source: "./img/checkengine-light.png"
             visible: root.mil
         }
         Image{
             x:660.3; y: 418
             width: 33; height: 34 
             z: 1
-            source: "./danver/battery-light.png"
+            source: "./img/battery-light.png"
             visible: root.battery
         }
         Image{
             x:622.5; y: 418
             width: 33; height: 34 
             z: 1
-            source: "./danver/airbag-light.png"
+            source: "./img/airbag-light.png"
             visible: root.airbag
         }
         Image{
             x:584.7; y: 418
             width: 33; height: 34 
             z: 1
-            source: "./danver/hibeams-light.png"
+            source: "./img/hibeams-light.png"
             visible: root.mainbeam
         }
         Image{
             x:546.8; y: 418
             width: 33; height: 34 
             z: 1
-            source: "./danver/abs-light.png"
+            source: "./img/abs-light.png"
             visible: root.abs
         }
 
+    }
+
+    /* ########################################################################## */
+    /* Settings focus: marks the readout that the settings menu is editing        */
+    /* ########################################################################## */
+    // settingsFocus is the key of the selected menu row ("waterhigh", "rpmlimit", ...)
+    // or "" when the menu is closed / browsing groups.
+    readonly property int focusSpot: {
+        var k = root.settingsFocus
+        if (k === "waterunits" || k === "waterhigh") return 0
+        if (k === "speedunits") return 1
+        if (k === "rpmlimit") return 2
+        if (k === "oiltempshow" || k === "oiltempunits" || k === "oiltemphigh") return 3
+        if (k === "oilpressureshow" || k === "oilpressureunits" || k === "oilpressurelow") return 4
+        if (k === "fuellow") return 5
+        return -1
+    }
+    property real focusPulse: 1
+
+    SequentialAnimation {
+        running: root.focusSpot >= 0
+        loops: Animation.Infinite
+        onRunningChanged: if (!running) root.focusPulse = 1
+        NumberAnimation { target: root; property: "focusPulse"; to: 0.3; duration: 500; easing.type: Easing.InOutSine }
+        NumberAnimation { target: root; property: "focusPulse"; to: 1;   duration: 500; easing.type: Easing.InOutSine }
+    }
+
+    Rectangle {
+        id: settings_focus_box
+        // x, y, width, height: coolant, speed, rpm, oil temp, oil pressure, fuel
+        readonly property var spots: [
+            [ 10, 290, 196, 68],
+            [302, 290, 196, 68],
+            [526, 290, 262, 68],
+            [ 16, 376, 224, 42],
+            [ 16, 423, 224, 42],
+            [296, 378, 202, 46]
+        ]
+        property int spot: 0
+        Connections {
+            target: root
+            onFocusSpotChanged: if (root.focusSpot >= 0) settings_focus_box.spot = root.focusSpot   // keep the last spot while fading out
+        }
+        x: spots[spot][0]
+        y: spots[spot][1]
+        width: spots[spot][2]
+        height: spots[spot][3]
+        radius: 6
+        z: 120
+        color: "transparent"
+        border.width: 8
+        border.color: "#000000"
+        opacity: root.focusSpot >= 0 ? root.focusPulse : 0
+        visible: opacity > 0
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: 2
+            radius: 4
+            color: "transparent"
+            border.width: 4
+            border.color: "#ffd400"         // menu yellow, distinct from the dash's cyan
+        }
     }
 } //End DanverDisplay

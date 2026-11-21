@@ -22,7 +22,7 @@ Item{
     property int tripmeter:if(speedunits==0)rpmtest.tripmileage0data;else rpmtest.tripmileage0data*0.62
     property real rpm:rpmtest.rpmdata
     property real speed:rpmtest.speeddata
-    property int speedunits:0
+    property int speedunits:1
     property real watertemp:rpmtest.watertempdata
     property real fuel:rpmtest.fueldata
     property real o2:rpmtest.o2data
@@ -37,7 +37,7 @@ Item{
 
     property real gearpos:rpmtest.geardata
 
-    property real rpmlimit:4000
+    property real rpmlimit:8000
     property real shiftvalue:0
     property string colorscheme: "green"
     property int red: 255
@@ -54,19 +54,25 @@ Item{
     property real afrhigh:0
     property real afrunits:0
 
+    // Defaults for a fresh install (no JSON and no old .txt to migrate).
+    // High limits are always in Celsius, whatever units are displayed; 0 = no warning.
     property int waterlow:0
-    property int waterhigh:0
-    property int waterunits:0
-    property int fuellow:0
+    property int waterhigh:105
+    property int waterunits:1
+    property int fuellow:10
     property int fuelhigh:0
     property int fuelunits:1
     property int oiltemplow:0
-    property int oiltemphigh:0
-    property int oiltempunits:0
-    property int oilpressurelow:0
+    property int oiltemphigh:130
+    property int oiltempunits:1
+    property int oilpressurelow:1         // bar; readout turns red below this, 0 = no warning
     property int oilpressurehigh:0
     property int oilpressureunits:0
     property real night_time_hue:0
+
+    // Optional readouts, off until switched on in the menu
+    property int oiltempshow:0
+    property int oilpressureshow:0
 
     property bool settings_on_off:false
     property bool menu_on_off:rpmtest.settings_on_offdata&0x02
@@ -90,13 +96,19 @@ Item{
 
     FileIO {
         id: config_json
-        source: "opt/IC7/screen_configs/Danver_config.json"
+        source: "/opt/IC7/screen_configs/Danver_config.json"
         onError: console.log(msg)
     }
 
-    // Old positional file, read once for migration only
+    // Old positional files, read once for migration only.
+    // v5+ firmware keeps them in /opt/IC7, v4 kept them in /opt/Garw_IC7.
     FileIO {
         id: config_file
+        source: "/opt/IC7/screen_configs/Danver_config.txt"
+        onError: console.log(msg)
+    }
+    FileIO {
+        id: config_file_v4
         source: "/opt/Garw_IC7/screen_configs/Danver_config.txt"
         onError: console.log(msg)
     }
@@ -105,19 +117,28 @@ Item{
     //   disabled: true -> the property still exists (so the dial can bind to it),
     //   but it is hidden from the menu and not written to or read from the JSON.
     readonly property var schema: [
-        { key: "colorscheme",      type: "string" },
-        { key: "red" },  { key: "green" },  { key: "blue" },
-        { key: "waterlow" },       { key: "waterhigh" },       { key: "waterunits" },
-        { key: "fuellow" },        { key: "fuelhigh" },        { key: "fuelunits" },
-        { key: "oiltemplow" },     { key: "oiltemphigh" },     { key: "oiltempunits" },
-        { key: "oilpressurelow" }, { key: "oilpressurehigh" }, { key: "oilpressureunits" },
-        { key: "speedunits" },     { key: "rpmlimit" },        { key: "shiftvalue" },
-        { key: "night_time_hue" }, { key: "rpmdamping" },
-        // no gauge for these on this dial
-        { key: "batterylow",  disabled: true },
-        { key: "batteryhigh", disabled: true },
-        { key: "afrlow",      disabled: true },
-        { key: "afrhigh",     disabled: true }
+        { key: "waterhigh" },      { key: "waterunits" },
+        { key: "fuellow" },
+        { key: "oiltempshow" },    { key: "oiltemphigh" },     { key: "oiltempunits" },
+        { key: "oilpressureshow" },{ key: "oilpressureunits" }, { key: "oilpressurelow" },
+        { key: "speedunits" },     { key: "rpmlimit" },
+        // the Danver dial has nothing that uses these
+        { key: "colorscheme",      type: "string", disabled: true },
+        { key: "red",              disabled: true },
+        { key: "green",            disabled: true },
+        { key: "blue",             disabled: true },
+        { key: "waterlow",         disabled: true },
+        { key: "fuelhigh",         disabled: true },
+        { key: "fuelunits",        disabled: true },
+        { key: "oiltemplow",       disabled: true },
+        { key: "oilpressurehigh",  disabled: true },
+        { key: "shiftvalue",       disabled: true },
+        { key: "night_time_hue",   disabled: true },
+        { key: "rpmdamping",       disabled: true },
+        { key: "batterylow",       disabled: true },
+        { key: "batteryhigh",      disabled: true },
+        { key: "afrlow",           disabled: true },
+        { key: "afrhigh",          disabled: true }
     ]
 
     // What the menu should list and what gets persisted
@@ -179,9 +200,19 @@ Item{
             }
         }
         var old = readLines(config_file, 26)
+        if (old.length === 0) old = readLines(config_file_v4, 26)
         if (old.length > 0) {
-            for (var j = 0; j < old.length && j < legacyKeys.length; j++)
-                if (legacyKeys[j]) applyConfigValue(legacyKeys[j], old[j])
+            for (var j = 0; j < old.length && j < legacyKeys.length; j++) {
+                var lk = legacyKeys[j]
+                // The old oil pressure Low did nothing on this dash, so it is not imported
+                if (lk && lk !== "oilpressurelow") applyConfigValue(lk, old[j])
+            }
+            // The old dash showed oil temp / oil pressure when their High was above zero.
+            // Carry that over to the new Show settings.
+            var oth = Number(old[legacyKeys.indexOf("oiltemphigh")])
+            var oph = Number(old[legacyKeys.indexOf("oilpressurehigh")])
+            root.oiltempshow     = (!isNaN(oth) && oth !== 0) ? 1 : 0
+            root.oilpressureshow = (!isNaN(oph) && oph !== 0) ? 1 : 0
             return "legacy"
         }
         return "none"
@@ -303,7 +334,7 @@ Item{
         Behavior on scale { NumberAnimation { duration: 500 } }
     DanverDisplay  {
         id: dial
-        odometer:root.odometer
+        odometer:root.odometer/10      // raw value is in tenths; dial wants 6 digits
         tripmeter:root.tripmeter
         shiftvalue:root.shiftvalue
         rpm:root.rpm
@@ -330,12 +361,14 @@ Item{
         oiltemphigh:root.oiltemphigh
         oiltemplow: root.oiltemplow
         oiltempunits: root.oiltempunits
+        oiltempshow: root.oiltempshow
+        oilpressureshow: root.oilpressureshow
         batteryvoltage: root.batteryvoltage
         userColor: Qt.rgba(root.red/255, root.green/255, root.blue/255, 1)
         gearpos: root.gearpos
         udp_message:root.udp_message
         inputs: root.inputs
-        settingsFocus: menu.focusKey     // add `property string settingsFocus: ""` to AgeSolo
+        settingsFocus: menu.focusKey
         opacity: 1
         width: 800
         height: 480
