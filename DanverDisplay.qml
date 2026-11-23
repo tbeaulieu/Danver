@@ -56,7 +56,7 @@ Item {
     property bool right_joystick: inputs & 0x40000000 || root.udp_right
 
     property int odometer: rpmtest.odometer0data/10 //Overridden by Danver.qml: km or miles to match speedunits, div by 10 to get 6 digits
-    property int tripmeter: rpmtest.tripmileage0data*0.62
+    property int tripmeter: rpmtest.tripmileage0data*0.621371
     property real value: 0
     property real shiftvalue: 0
 
@@ -93,7 +93,7 @@ Item {
 
     property real batteryvoltage: rpmtest.batteryvoltagedata
 
-    property int mph: (speed * 0.62)
+    property int mph: Math.round(speed * 0.621371)
 
     property int gearpos: rpmtest.geardata
 
@@ -579,7 +579,7 @@ Item {
             width: 33; height: 34 
             z: 1
             source: "./img/brake-light.png"
-            visible: root.brake
+            visible: root.brake || root.handbrake
         }
         Image{
             x: 603.7; y: 380.9
@@ -608,6 +608,13 @@ Item {
             z: 1
             source: "./img/battery-light.png"
             visible: root.battery
+        }
+        Image{
+            x:698.1; y: 418
+            width: 33; height: 34 
+            z: 1
+            source: "./img/door-light.png"
+            visible: root.doorswitch
         }
         Image{
             x:622.5; y: 418

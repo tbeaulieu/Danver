@@ -7,7 +7,7 @@
 
 Change the two `width:` lines of `rpm_action` in DanverDisplay.qml (marked Chunk-style / Percentage-style) for chunky vs smooth RPM behavior. Make sure you don't have both there at the same time, or it'll bomb your dash.
 
-Oil temperature and oil pressure are optional: turn each one on with its Show row in the settings menu. Coolant and oil temp High limits are in Celsius and the oil pressure Low limit is in bar; 0 turns a warning off.
+Oil temperature and oil pressure are optional: turn each one on with its Show row in the settings menu. Coolant and oil temp High limits are in the units you display (changing Units converts them) and the oil pressure Low limit is in bar; 0 turns a warning off.
 
 Settings are saved as JSON in `/opt/IC7/screen_configs/Danver_config.json`. An existing `Danver_config.txt` is imported once on first run.
 
